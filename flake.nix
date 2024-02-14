@@ -11,6 +11,7 @@
         buildInputs = with pkgs; [
         dbeaver
         helix
+        unzip
         ];
       };
     }
