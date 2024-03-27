@@ -25,6 +25,21 @@ end;
 
 $$ language PLPGSQL;
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+--drop function add_new_user(
+--    p_username VARCHAR, 
+--    p_user_email VARCHAR, 
+--    p_user_pw VARCHAR,
+--    p_user_dob VARCHAR,
+---- Accept as varchar
+--p_user_fname VARCHAR,
+--    p_user_lname VARCHAR,
+--    p_user_ph VARCHAR ,
+--    p_user_pp VARCHAR ,
+--    p_user_bio text 
+--)
+
 create or replace
 function add_new_user(
     p_username VARCHAR, 
@@ -37,11 +52,9 @@ p_user_fname VARCHAR,
     p_user_ph VARCHAR default null,
     p_user_pp VARCHAR default null,
     p_user_bio text default null
-) returns text[] as $$
+) returns table (q_result integer, q_message varchar) as $$
 declare
     v_user_exists INTEGER;
-
-v_result text[];
 
 begin
     select
@@ -51,14 +64,14 @@ into
 
 if v_user_exists > 0 then
 -- If user already exists, return an array with an error message
-v_result := array['0',
-'A user with this email already exists'];
+	return query 
+		select 0::integer as q_result, 'A user with this email already exists'::varchar as q_message;
 else
 -- Convert p_user_dob to date type
-        insert
+insert
 	into
 	users (
-            user_name,
+    user_name,
 	user_email,
 	user_pw,
 	user_ph,
@@ -69,37 +82,37 @@ else
 	user_bio
         )
 values (
-            p_username,
-            p_user_email,
-            p_user_pw,
-            p_user_ph,
-            p_user_fname,
-            p_user_lname,
-            p_user_dob::DATE,
-            p_user_pp,
-            p_user_bio
+    p_username,
+    p_user_email,
+    p_user_pw,
+    p_user_ph,
+    p_user_fname,
+    p_user_lname,
+    p_user_dob::DATE,
+    p_user_pp,
+    p_user_bio
         );
 -- If insertion successful, return an array with success message
-v_result := array['0',
-'User successfully added'];
+	return query 
+		select 1::integer as q_result, 'SUCCESS'::varchar as q_message;
 end if;
-
-return v_result;
 
 exception
 when others then
 -- If any exception occurs, return an array with error message
-            return array['1',
-sqlerrm];
+	return query 
+		select 0::integer as q_result, sqlerrm::varchar as q_message;
 end;
 
 $$ language PLPGSQL;
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 create or replace
 function validate_login(
     p_user_email VARCHAR, 
     p_user_pw VARCHAR
-) returns text as $$
+) returns table (q_result integer, q_message varchar) as $$
 declare
     v_user_pw VARCHAR;
 
@@ -114,20 +127,20 @@ where
 	user_email = p_user_email;
 
 if v_user_pw = p_user_pw then
-		return array['1',
-'SUCESS'];
+	return query 
+		select 1::integer as q_result, 'SUCCESS'::varchar as q_message;
 else 
-		return array['0',
-'Please check username or password'];
+	return query 
+		select 0::integer as q_result, 'PLEASE CHECK USERNAME OR PASSWORD'::varchar as q_message;
 end if;
 end;
 
 $$ language PLPGSQL;
 --tests
 --SELECT check_user_exists('user1@example.com');
---SELECT add_new_user(
---    'proctest', 
---    'proctest3@something.com', 
+--SELECT * from add_new_user(
+--    'proctest5010', 
+--    'proctest3111@something.com', 
 --    'somepw', 
 --    '1999-01-01', 
 --    'userfname', 
@@ -137,4 +150,4 @@ $$ language PLPGSQL;
 ----    'bio' 
 --);
 --
---select validate_login('user1@example.com', 'passlword1');
+--select * from validate_login('user1@example.com', 'password1');
